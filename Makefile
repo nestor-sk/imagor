@@ -10,6 +10,9 @@ dev: build
 help: build
 	./bin/imagor -h
 
+clean:
+	rm -rf bin/*
+
 get:
 	go get -v -t -d ./...
 
