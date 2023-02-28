@@ -2,29 +2,20 @@ package vips
 
 import (
 	"context"
-	"github.com/cshum/imagor"
-	"github.com/cshum/imagor/imagorpath"
-	"go.uber.org/zap"
 	"math"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/cshum/imagor"
+	"github.com/cshum/imagor/imagorpath"
+	"go.uber.org/zap"
 )
 
 var imageTypeMap = map[string]ImageType{
-	"gif":    ImageTypeGIF,
-	"jpeg":   ImageTypeJPEG,
-	"jpg":    ImageTypeJPEG,
-	"magick": ImageTypeMagick,
-	"pdf":    ImageTypePDF,
-	"png":    ImageTypePNG,
-	"svg":    ImageTypeSVG,
-	"tiff":   ImageTypeTIFF,
-	"webp":   ImageTypeWEBP,
-	"heif":   ImageTypeHEIF,
-	"bmp":    ImageTypeBMP,
-	"avif":   ImageTypeAVIF,
-	"jp2":    ImageTypeJP2K,
+	"jpeg": ImageTypeJPEG,
+	"jpg":  ImageTypeJPEG,
+	"png":  ImageTypePNG,
 }
 
 // Process implements imagor.Processor interface
@@ -64,10 +55,7 @@ func (v *Processor) Process(
 		case "format":
 			if imageType, ok := imageTypeMap[p.Args]; ok {
 				format = supportedSaveFormat(imageType)
-				if !IsAnimationSupported(format) {
-					// no frames if export format not support animation
-					maxN = 1
-				}
+				maxN = 1
 			}
 			break
 		case "max_frames":
@@ -219,12 +207,7 @@ func (v *Processor) Process(
 		origHeight = float64(img.PageHeight())
 	)
 	if format == ImageTypeUnknown {
-		if blob.BlobType() == imagor.BlobTypeAVIF {
-			// meta loader determined as heif
-			format = ImageTypeAVIF
-		} else {
-			format = img.Format()
-		}
+		format = img.Format()
 	}
 	if v.Debug {
 		v.Logger.Debug("image",
@@ -511,9 +494,6 @@ type Metadata struct {
 
 func metadata(img *Image, format ImageType, stripExif bool) *Metadata {
 	pages := 1
-	if IsAnimationSupported(format) {
-		pages = img.Height() / img.PageHeight()
-	}
 	exif := map[string]any{}
 	if !stripExif {
 		exif = img.Exif()
@@ -532,12 +512,9 @@ func metadata(img *Image, format ImageType, stripExif bool) *Metadata {
 
 func supportedSaveFormat(format ImageType) ImageType {
 	switch format {
-	case ImageTypePNG, ImageTypeWEBP, ImageTypeTIFF, ImageTypeGIF, ImageTypeAVIF, ImageTypeHEIF, ImageTypeJP2K:
+	case ImageTypePNG:
 		if IsSaveSupported(format) {
 			return format
-		}
-		if format == ImageTypeAVIF && IsSaveSupported(ImageTypeHEIF) {
-			return ImageTypeAVIF
 		}
 	}
 	return ImageTypeJPEG
@@ -548,42 +525,6 @@ func (v *Processor) export(image *Image, format ImageType, quality int) ([]byte,
 	case ImageTypePNG:
 		opts := NewPngExportParams()
 		return image.ExportPng(opts)
-	case ImageTypeWEBP:
-		opts := NewWebpExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportWebp(opts)
-	case ImageTypeTIFF:
-		opts := NewTiffExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportTiff(opts)
-	case ImageTypeGIF:
-		opts := NewGifExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportGIF(opts)
-	case ImageTypeAVIF:
-		opts := NewAvifExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportAvif(opts)
-	case ImageTypeHEIF:
-		opts := NewHeifExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportHeif(opts)
-	case ImageTypeJP2K:
-		opts := NewJp2kExportParams()
-		if quality > 0 {
-			opts.Quality = quality
-		}
-		return image.ExportJp2k(opts)
 	default:
 		opts := NewJpegExportParams()
 		if v.MozJPEG {

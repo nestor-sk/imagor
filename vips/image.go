@@ -262,12 +262,6 @@ func (r *Image) ColorSpace() Interpretation {
 // Pages returns the number of pages in the Image
 // For animated images this corresponds to the number of frames
 func (r *Image) Pages() int {
-	// libvips uses the same attribute (n_pages) to represent the number of pyramid layers in JP2K
-	// as we interpret the attribute as frames and JP2K does not support animation we override this with 1
-	if r.format == ImageTypeJP2K {
-		return 1
-	}
-
 	return vipsGetImageNPages(r.image)
 }
 
@@ -328,90 +322,6 @@ func (r *Image) ExportPng(params *PngExportParams) ([]byte, error) {
 	}
 
 	buf, err := vipsSavePNGToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportWebp exports the image as WEBP to a buffer.
-func (r *Image) ExportWebp(params *WebpExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewWebpExportParams()
-	}
-
-	buf, err := vipsSaveWebPToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportHeif exports the image as HEIF to a buffer.
-func (r *Image) ExportHeif(params *HeifExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewHeifExportParams()
-	}
-
-	buf, err := vipsSaveHEIFToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportTiff exports the image as TIFF to a buffer.
-func (r *Image) ExportTiff(params *TiffExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewTiffExportParams()
-	}
-
-	buf, err := vipsSaveTIFFToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportGIF exports the image as GIF to a buffer.
-func (r *Image) ExportGIF(params *GifExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewGifExportParams()
-	}
-
-	buf, err := vipsSaveGIFToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportAvif exports the image as AVIF to a buffer.
-func (r *Image) ExportAvif(params *AvifExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewAvifExportParams()
-	}
-
-	buf, err := vipsSaveAVIFToBuffer(r.image, *params)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
-}
-
-// ExportJp2k exports the image as JPEG2000 to a buffer.
-func (r *Image) ExportJp2k(params *Jp2kExportParams) ([]byte, error) {
-	if params == nil {
-		params = NewJp2kExportParams()
-	}
-
-	buf, err := vipsSaveJP2KToBuffer(r.image, *params)
 	if err != nil {
 		return nil, err
 	}

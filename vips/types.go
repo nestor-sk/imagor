@@ -10,18 +10,8 @@ type ImageType int
 // ImageType enum
 const (
 	ImageTypeUnknown ImageType = iota
-	ImageTypeGIF
 	ImageTypeJPEG
-	ImageTypeMagick
-	ImageTypePDF
 	ImageTypePNG
-	ImageTypeSVG
-	ImageTypeTIFF
-	ImageTypeWEBP
-	ImageTypeHEIF
-	ImageTypeBMP
-	ImageTypeAVIF
-	ImageTypeJP2K
 )
 
 // IsSaveSupported indicates if image type supports save
@@ -34,11 +24,6 @@ func IsLoadSupported(imageType ImageType) bool {
 	return supportedLoadImageTypes[imageType]
 }
 
-// IsAnimationSupported indicates if image type supports animation
-func IsAnimationSupported(imageType ImageType) bool {
-	return imageType == ImageTypeGIF || imageType == ImageTypeWEBP
-}
-
 // vipsDetermineImageTypeFromMetaLoader determine the image type from vips-loader metadata
 func vipsDetermineImageTypeFromMetaLoader(in *C.VipsImage) ImageType {
 	if in != nil {
@@ -49,30 +34,6 @@ func vipsDetermineImageTypeFromMetaLoader(in *C.VipsImage) ImageType {
 			if strings.HasPrefix(vipsLoader, "png") {
 				return ImageTypePNG
 			}
-			if strings.HasPrefix(vipsLoader, "gif") {
-				return ImageTypeGIF
-			}
-			if strings.HasPrefix(vipsLoader, "svg") {
-				return ImageTypeSVG
-			}
-			if strings.HasPrefix(vipsLoader, "webp") {
-				return ImageTypeWEBP
-			}
-			if strings.HasPrefix(vipsLoader, "heif") {
-				return ImageTypeHEIF
-			}
-			if strings.HasPrefix(vipsLoader, "tiff") {
-				return ImageTypeTIFF
-			}
-			if strings.HasPrefix(vipsLoader, "pdf") {
-				return ImageTypePDF
-			}
-			if strings.HasPrefix(vipsLoader, "jp2k") {
-				return ImageTypeJP2K
-			}
-			if strings.HasPrefix(vipsLoader, "magick") {
-				return ImageTypeMagick
-			}
 		}
 	}
 	return ImageTypeUnknown
@@ -80,33 +41,14 @@ func vipsDetermineImageTypeFromMetaLoader(in *C.VipsImage) ImageType {
 
 // ImageTypes defines the various image types supported by vips
 var ImageTypes = map[ImageType]string{
-	ImageTypeGIF:    "gif",
-	ImageTypeJPEG:   "jpeg",
-	ImageTypeMagick: "magick",
-	ImageTypePDF:    "pdf",
-	ImageTypePNG:    "png",
-	ImageTypeSVG:    "svg",
-	ImageTypeTIFF:   "tiff",
-	ImageTypeWEBP:   "webp",
-	ImageTypeHEIF:   "heif",
-	ImageTypeBMP:    "bmp",
-	ImageTypeAVIF:   "avif",
-	ImageTypeJP2K:   "jp2k",
+	ImageTypeJPEG: "jpeg",
+	ImageTypePNG:  "png",
 }
 
 // ImageMimeTypes map the various image types to its mime type representation
 var ImageMimeTypes = map[ImageType]string{
-	ImageTypeGIF:  "image/gif",
 	ImageTypeJPEG: "image/jpeg",
-	ImageTypePDF:  "application/pdf",
 	ImageTypePNG:  "image/png",
-	ImageTypeSVG:  "image/svg+xml",
-	ImageTypeTIFF: "image/tiff",
-	ImageTypeWEBP: "image/webp",
-	ImageTypeHEIF: "image/heif",
-	ImageTypeBMP:  "image/bmp",
-	ImageTypeAVIF: "image/avif",
-	ImageTypeJP2K: "image/jp2",
 }
 
 // Color represents an RGB
@@ -149,7 +91,7 @@ const (
 // Intent represents VIPS_INTENT type
 type Intent int
 
-//Intent enum
+// Intent enum
 const (
 	IntentPerceptual Intent = C.VIPS_INTENT_PERCEPTUAL
 	IntentRelative   Intent = C.VIPS_INTENT_RELATIVE

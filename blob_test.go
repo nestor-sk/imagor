@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func doTestBlobReaders(t *testing.T, b *Blob, buf []byte) {
@@ -67,57 +68,6 @@ func TestBlobTypes(t *testing.T) {
 			extension:   ".png",
 			bytesType:   BlobTypePNG,
 		},
-		{
-			name:        "tiff",
-			path:        "gopher.tiff",
-			contentType: "image/tiff",
-			extension:   ".tiff",
-			bytesType:   BlobTypeTIFF,
-		},
-		{
-			name:              "gif",
-			path:              "dancing-banana.gif",
-			contentType:       "image/gif",
-			extension:         ".gif",
-			bytesType:         BlobTypeGIF,
-			supportsAnimation: true,
-		},
-		{
-			name:              "webp",
-			path:              "demo3.webp",
-			contentType:       "image/webp",
-			extension:         ".webp",
-			bytesType:         BlobTypeWEBP,
-			supportsAnimation: true,
-		},
-		{
-			name:        "avif",
-			path:        "gopher-front.avif",
-			contentType: "image/avif",
-			extension:   ".avif",
-			bytesType:   BlobTypeAVIF,
-		},
-		{
-			name:        "heif",
-			path:        "gopher-front.heif",
-			contentType: "image/heif",
-			extension:   ".heif",
-			bytesType:   BlobTypeHEIF,
-		},
-		{
-			name:        "jp2",
-			path:        "gopher.jp2",
-			contentType: "image/jp2",
-			extension:   ".jp2",
-			bytesType:   BlobTypeJP2,
-		},
-		{
-			name:        "bmp",
-			path:        "bmp_24.bmp",
-			contentType: "image/bmp",
-			extension:   ".bmp",
-			bytesType:   BlobTypeBMP,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -126,7 +76,6 @@ func TestBlobTypes(t *testing.T) {
 				// noop
 				return nil
 			})
-			assert.Equal(t, tt.supportsAnimation, b.SupportsAnimation())
 			assert.Equal(t, tt.contentType, b.ContentType())
 			assert.Equal(t, filepath, b.FilePath())
 			assert.Equal(t, tt.bytesType, b.BlobType())
@@ -142,7 +91,6 @@ func TestBlobTypes(t *testing.T) {
 			doTestBlobReaders(t, b, buf)
 
 			b = NewBlobFromBytes(buf)
-			assert.Equal(t, tt.supportsAnimation, b.SupportsAnimation())
 			assert.Equal(t, tt.contentType, b.ContentType())
 			assert.Equal(t, tt.bytesType, b.BlobType())
 			assert.False(t, b.IsEmpty())
@@ -155,7 +103,6 @@ func TestBlobTypes(t *testing.T) {
 			b = NewBlob(func() (reader io.ReadCloser, size int64, err error) {
 				return ioutil.NopCloser(bytes.NewReader(buf)), int64(len(buf)), nil
 			})
-			assert.Equal(t, tt.supportsAnimation, b.SupportsAnimation())
 			assert.Equal(t, tt.contentType, b.ContentType())
 			assert.Equal(t, tt.bytesType, b.BlobType())
 			assert.False(t, b.IsEmpty())
@@ -169,7 +116,6 @@ func TestBlobTypes(t *testing.T) {
 				// unknown size to force discard fanout
 				return ioutil.NopCloser(bytes.NewReader(buf)), 0, nil
 			})
-			assert.Equal(t, tt.supportsAnimation, b.SupportsAnimation())
 			assert.Equal(t, tt.contentType, b.ContentType())
 			assert.Equal(t, tt.bytesType, b.BlobType())
 			assert.False(t, b.IsEmpty())

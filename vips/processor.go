@@ -2,12 +2,13 @@ package vips
 
 import (
 	"context"
-	"github.com/cshum/imagor"
-	"go.uber.org/zap"
 	"math"
 	"runtime"
 	"strings"
 	"sync"
+
+	"github.com/cshum/imagor"
+	"go.uber.org/zap"
 )
 
 // FilterFunc filter handler function
@@ -153,18 +154,6 @@ func newImageFromBlob(
 	src := NewSource(reader)
 	contextDefer(ctx, src.Close)
 	img, err := src.LoadImage(params)
-	if err != nil && blob.BlobType() == imagor.BlobTypeBMP {
-		// fallback with Go BMP decoder if vips error on BMP
-		src.Close()
-		r, _, err := blob.NewReader()
-		if err != nil {
-			return nil, err
-		}
-		defer func() {
-			_ = r.Close()
-		}()
-		return loadImageFromBMP(r)
-	}
 	return img, err
 }
 
@@ -192,50 +181,12 @@ func (v *Processor) NewThumbnail(
 	var err error
 	var img *Image
 	params.FailOnError.Set(false)
-	if isBlobAnimated(blob, n) {
-		if n < -1 {
-			params.NumPages.Set(-n)
-		} else {
-			params.NumPages.Set(-1)
-		}
-		if crop == InterestingNone || size == SizeForce {
-			if img, err = newImageFromBlob(ctx, blob, params); err != nil {
-				return nil, WrapErr(err)
-			}
-			if n > 1 && img.Pages() > n {
-				// reload image to restrict frames loaded
-				img.Close()
-				return v.NewThumbnail(ctx, blob, width, height, crop, size, -n)
-			}
-			if _, err = v.CheckResolution(img, nil); err != nil {
-				return nil, err
-			}
-			if err = img.ThumbnailWithSize(width, height, crop, size); err != nil {
-				img.Close()
-				return nil, WrapErr(err)
-			}
-		} else {
-			if img, err = v.CheckResolution(newImageFromBlob(ctx, blob, params)); err != nil {
-				return nil, WrapErr(err)
-			}
-			if n > 1 && img.Pages() > n {
-				// reload image to restrict frames loaded
-				img.Close()
-				return v.NewThumbnail(ctx, blob, width, height, crop, size, -n)
-			}
-			if err = v.animatedThumbnailWithCrop(img, width, height, crop, size); err != nil {
-				img.Close()
-				return nil, WrapErr(err)
-			}
-		}
-	} else {
-		switch blob.BlobType() {
-		case imagor.BlobTypeJPEG, imagor.BlobTypeGIF, imagor.BlobTypeWEBP:
-			// only allow real thumbnail for jpeg gif webp
-			img, err = newThumbnailFromBlob(ctx, blob, width, height, crop, size, params)
-		default:
-			img, err = v.newThumbnailFallback(ctx, blob, width, height, crop, size, params)
-		}
+	switch blob.BlobType() {
+	case imagor.BlobTypeJPEG:
+		// only allow real thumbnail for jpeg gif webp
+		img, err = newThumbnailFromBlob(ctx, blob, width, height, crop, size, params)
+	default:
+		img, err = v.newThumbnailFallback(ctx, blob, width, height, crop, size, params)
 	}
 	return v.CheckResolution(img, WrapErr(err))
 }
@@ -257,23 +208,6 @@ func (v *Processor) newThumbnailFallback(
 func (v *Processor) NewImage(ctx context.Context, blob *imagor.Blob, n int) (*Image, error) {
 	var params = NewImportParams()
 	params.FailOnError.Set(false)
-	if isBlobAnimated(blob, n) {
-		if n < -1 {
-			params.NumPages.Set(-n)
-		} else {
-			params.NumPages.Set(-1)
-		}
-		img, err := v.CheckResolution(newImageFromBlob(ctx, blob, params))
-		if err != nil {
-			return nil, WrapErr(err)
-		}
-		// reload image to restrict frames loaded
-		if n > 1 && img.Pages() > n {
-			img.Close()
-			return v.NewImage(ctx, blob, -n)
-		}
-		return img, nil
-	}
 	img, err := v.CheckResolution(newImageFromBlob(ctx, blob, params))
 	if err != nil {
 		return nil, WrapErr(err)
@@ -347,10 +281,6 @@ func (v *Processor) CheckResolution(img *Image, err error) (*Image, error) {
 		return nil, imagor.ErrMaxResolutionExceeded
 	}
 	return img, nil
-}
-
-func isBlobAnimated(blob *imagor.Blob, n int) bool {
-	return blob != nil && blob.SupportsAnimation() && n != 1 && n != 0
 }
 
 // WrapErr wraps error to become imagor.Error
