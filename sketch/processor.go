@@ -1,7 +1,15 @@
 package sketch
 
+// #cgo CFLAGS: -I.
+// #cgo LDFLAGS: -lrasterizer
+// #include "PRRasterizerC.h"
+import "C"
+
 import (
 	"context"
+	"fmt"
+	"strings"
+	"unsafe"
 
 	"github.com/cshum/imagor"
 	"github.com/cshum/imagor/imagorpath"
@@ -30,7 +38,7 @@ func NewProcessor(options ...Option) *Processor {
 // Startup implements imagor.Processor interface
 func (p *Processor) Startup(_ context.Context) error {
 	if p.Debug {
-		p.Logger.Debug("sketch.Porcessor.Startup")
+		p.Logger.Debug("sketch", zap.String("log", "Processor startup"))
 	}
 	return nil
 }
@@ -38,7 +46,7 @@ func (p *Processor) Startup(_ context.Context) error {
 // Shutdown implements imagor.Processor interface
 func (p *Processor) Shutdown(_ context.Context) error {
 	if p.Debug {
-		p.Logger.Debug("sketch.Porcessor.Shutdown")
+		p.Logger.Debug("sketch", zap.String("log", "Processor shutdown"))
 	}
 	return nil
 }
@@ -46,9 +54,39 @@ func (p *Processor) Shutdown(_ context.Context) error {
 // Process implements imagor.Processor interface
 func (p *Processor) Process(ctx context.Context, blob *imagor.Blob, params imagorpath.Params, load imagor.LoadFunc) (*imagor.Blob, error) {
 	if p.Debug {
-		p.Logger.Debug("sketch.Processor.Process")
+		p.Logger.Debug("sketch", zap.String("log", "Processor process"))
 	}
-	return blob, nil
+
+	//TODO: Detect if we should process the blob not by checking the file extension
+	if !strings.HasSuffix(blob.FilePath(), ".sketchpresentation") {
+		p.Logger.Info("sketch", zap.String("log", "Not a sketch presentation file, forwarding request"))
+		return nil, imagor.ErrForward{Params: params}
+	}
+
+	p.Logger.Info("sketch", zap.String("log", fmt.Sprint("Reading presentation file: ", blob.FilePath())))
+	data, err := blob.ReadAll()
+	if err != nil {
+		return nil, imagor.WrapError(err)
+	}
+	dataPtr := (*C.char)(unsafe.Pointer(&data[0]))
+	size := C.ulong(len(data))
+	c := C.PRRasterizerNew(dataPtr, size)
+
+	p.Logger.Info("sketch", zap.String("log", "Rasterazing presentation file"))
+	r := C.PRRasterizerExportPNG(c, 2, 100)
+	rData := unsafe.Pointer(r.buffer)
+	rSize := C.int(r.size)
+	rBuffer := C.GoBytes(rData, rSize)
+
+	p.Logger.Info("sketch", zap.String("log", "Converting presentation file raster to blob"))
+	b := imagor.NewBlobFromBytes(rBuffer)
+	b.SetContentType("image/png")
+
+	C.PRRasterizerResultFree(r)
+	C.PRRasterizerFree(c)
+
+	//We return ErrForward to indicate that we want to forward the request to the next processor
+	return b, imagor.ErrForward{Params: params}
 }
 
 type Option func(*Processor)
