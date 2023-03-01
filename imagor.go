@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cshum/imagor/imagorpath"
-	"go.uber.org/zap"
-	"golang.org/x/sync/semaphore"
-	"golang.org/x/sync/singleflight"
 	"io"
 	"net/http"
 	"net/url"
@@ -18,6 +14,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cshum/imagor/imagorpath"
+	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
+	"golang.org/x/sync/singleflight"
 )
 
 // Version imagor version
@@ -389,6 +390,7 @@ func (app *Imagor) Do(r *http.Request, p imagorpath.Params) (blob *Blob, err err
 		}
 		var forwardP = p
 		for _, processor := range app.Processors {
+			app.Logger.Debug("process", zap.String("log", fmt.Sprintf("process with %T", processor)))
 			b, e := checkBlob(processor.Process(ctx, blob, forwardP, load))
 			if !isBlobEmpty(b) {
 				blob = b // forward Blob to next processor if exists
